@@ -209,7 +209,11 @@ int negate(int x)
  */
 int isAsciiDigit(int x)
 {
-  return 2;
+  int y = x + (~0x30 + 1); // y = x - 0x30
+  int z = x + (~0x3A + 1); // z = x - 0x3A
+  int is_nonneg_y = !(y >> 31);
+  int is_nonpos_z = !(~(z >> 31));
+  return is_nonneg_y & is_nonpos_z;
 }
 /*
  * conditional - same as x ? y : z
@@ -220,7 +224,9 @@ int isAsciiDigit(int x)
  */
 int conditional(int x, int y, int z)
 {
-  return 2;
+  int is_x_nonzero = !x;
+  int mask = is_x_nonzero << 31 >> 31;
+  return (y & ~mask) | (z & mask);
 }
 /*
  * isLessOrEqual - if x <= y  then return 1, else return 0
@@ -231,7 +237,10 @@ int conditional(int x, int y, int z)
  */
 int isLessOrEqual(int x, int y)
 {
-  return 2;
+  int diff_y_minus_x = y + (~x + 1);
+  int is_same_sign = ((x ^ y) >> 31);
+  int is_y_neg = !(y >> 31);
+  return (!is_same_sign & !(diff_y_minus_x >> 31)) | (is_same_sign & is_y_neg);
 }
 // 4
 /*
@@ -244,7 +253,9 @@ int isLessOrEqual(int x, int y)
  */
 int logicalNeg(int x)
 {
-  return 2;
+  int is_neg = (x >> 31) & 1;
+  int is_pos = (x + (~(1 << 31))) >> 31 & 1;
+  return (is_neg | is_pos) ^ 1;
 }
 /* howManyBits - return the minimum number of bits required to represent x in
  *             two's complement
@@ -260,7 +271,41 @@ int logicalNeg(int x)
  */
 int howManyBits(int x)
 {
-  return 0;
+  int bits = 1; // at least need 1 bit for 0
+  int origin_x = x;
+  // if x is negative, convert x to positive
+  int is_neg = (x >> 31) & 1;
+  x = (is_neg & ~x) | (~is_neg & x); // if x is neg, x = ~x
+  // binary search for the highest 1 bit
+  // search in [16,31]
+  int high_16_bits = x >> 16;
+  int is_high_16_bits_nonzero = !!high_16_bits; // 1 for nonzero, 0 for zero
+  bits = bits + (is_high_16_bits_nonzero << 4);
+  x = (~0 << 16 >> (16 & ~is_high_16_bits_nonzero)) & x; // if high 16 bits is nonzero, x = high 16 bits else low 16 bits
+  // search in [8,15]
+  int high_8_bits = x >> 8;
+  int is_high_8_bits_nonzero = !!high_8_bits; // 1 for nonzero, 0 for zero
+  bits = bits + (is_high_8_bits_nonzero << 3);
+  x = (~0 << 8 >> (8 & ~is_high_8_bits_nonzero)) & x; // if high 8 bits is nonzero, x = high 8 bits else low 8 bits
+  // search in [4,7]
+  int high_4_bits = x >> 4;
+  int is_high_4_bits_nonzero = !!high_4_bits; // 1 for nonzero, 0 for zero
+  bits = bits + (is_high_4_bits_nonzero << 2);
+  x = (~0 << 4 >> (4 & ~is_high_4_bits_nonzero)) & x; // if high 4 bits is nonzero, x = high 4 bits else low 4 bits
+  // search in [2,3]
+  int high_2_bits = x >> 2;
+  int is_high_2_bits_nonzero = !!high_2_bits; // 1 for nonzero, 0 for zero
+  bits = bits + (is_high_2_bits_nonzero << 1);
+  x = (~0 << 2 >> (2 & ~is_high_2_bits_nonzero)) & x; // if high 2 bits is nonzero, x = high 2 bits else low 2 bits
+  // search in [1,1]
+  int high_1_bit = x >> 1;
+  int is_high_1_bit_nonzero = !!high_1_bit; // 1 for nonzero, 0 for zero
+  bits = bits + is_high_1_bit_nonzero;
+  // check the last bit
+  int last_bit = x & 1;
+  bits = bits + last_bit;
+  // todo: be debugged
+  return bits;
 }
 // float
 /*
@@ -276,7 +321,30 @@ int howManyBits(int x)
  */
 unsigned floatScale2(unsigned uf)
 {
-  return 2;
+  unsigned exp = uf << 1 >> 24 << 23;
+  unsigned frac = uf & 0x007FFFFF;
+  unsigned sign = uf >> 31 << 31;
+  // NaN or infinity
+  if (exp == 0x7F800000)
+    return uf;
+  // denorm
+  if (exp == 0)
+  {
+    // frac overflow
+    if (frac >> 22)
+      return ((frac << 1) & 0x007FFFFF) + sign + 0x00800000;
+    else
+      return sign + (frac << 1);
+  }
+  // norm
+  else
+  {
+    // exp overflow
+    if (exp == 0x7F800000)
+      return uf >> 23 << 23; // return infinity
+    else
+      return sign + (((exp >> 23) + 1) << 23) + frac;
+  }
 }
 /*
  * floatFloat2Int - Return bit-level equivalent of expression (int) f
@@ -292,7 +360,40 @@ unsigned floatScale2(unsigned uf)
  */
 int floatFloat2Int(unsigned uf)
 {
-  return 2;
+  unsigned exp = uf << 1 >> 24;
+  unsigned frac = uf & 0x007FFFFF;
+  unsigned sign = uf >> 31 << 31;
+  // NaN or infinity
+  if (exp == 0x7F800000)
+    return 0x80000000u;
+  // denorm
+  if (exp == 0)
+  {
+    return 0;
+  }
+  // norm
+  else
+  {
+    int e = exp - 127;
+    if (e < 0)
+      return 0;
+    else if (e > 31)
+      return 0x80000000u;
+    else
+    {
+      // transform frac to 1.frac
+      frac = frac + 0x00800000;
+      if (e > 23)
+      {
+        frac = frac << (e - 23);
+      }
+      else
+      {
+        frac = frac >> (23 - e);
+      }
+      return sign ? -frac : frac;
+    }
+  }
 }
 /*
  * floatPower2 - Return bit-level equivalent of the expression 2.0^x
@@ -309,5 +410,15 @@ int floatFloat2Int(unsigned uf)
  */
 unsigned floatPower2(int x)
 {
-  return 2;
+  // overflow
+  if (x > 127)
+    return 0x7F800000;
+  // underflow
+  else if (x < -126)
+    return 0;
+  // norm
+  else
+  {
+    return (x + 127) << 23;
+  }
 }
