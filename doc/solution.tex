@@ -1,0 +1,518 @@
+\documentclass{article}
+\usepackage[utf8]{ctex} % For Chinese characters, if needed
+\usepackage{listings}
+\usepackage{geometry}
+\usepackage{fancyhdr}
+\usepackage{float}
+
+\geometry{a4paper, left=2.5cm, right=2.5cm, top=2.5cm, bottom=2.5cm}
+
+\pagestyle{fancy}
+\fancyhf{}
+\chead{Data Lab 实验报告}
+\cfoot{\thepage}
+
+\lstset{
+  language=C,
+  breaklines=true,
+  basicstyle=\ttfamily\small,
+  keywordstyle=\bfseries,
+  commentstyle=\itshape,
+  showstringspaces=false,
+  numbers=left,
+  numberstyle=\tiny,
+  frame=single,
+  captionpos=b
+}
+
+\title{Data Lab 实验报告}
+\author{<你的名字>}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\section{实验题目与解答}
+
+\subsection{bitXor}
+\subsubsection{题目要求}
+使用 \texttt{\~{}} 和 \texttt{\&} 实现 \texttt{x\^{}y}。
+\begin{itemize}
+    \item Legal ops: \texttt{\~{}} \texttt{\&}
+    \item Max ops: 14
+\end{itemize}
+
+\subsubsection{实现代码}
+\begin{lstlisting}[caption={bitXor}]
+int bitXor(int x, int y)
+{
+  int a = ~x & y;
+  int b = x & ~y;
+  return ~(~a & ~b);
+}
+\end{lstlisting}
+
+\subsubsection{解题思路}
+\begin{itemize}
+  \item 异或运算的逻辑可以表示为 $(x\wedge \neg y) \vee (\neg x \wedge y)$。
+  \item 根据德摩根定律，$A \vee B$等价于$\neg (\neg A \wedge \neg B)$。
+  \item 因此，我们可以将 \texttt{x\^{}y} 转换为 \texttt{\~{}((\~{}(x\& \~{}y)) \& (\~{}(\~{}x\&y)))}。即可得到代码。
+\end{itemize}
+
+\subsection{tmin}
+\subsubsection{题目要求}
+返回最小的二进制补码整数。
+\begin{itemize}
+    \item Legal ops: \texttt{!} \texttt{\~{}} \texttt{\&} \texttt{\^{}} \texttt{|} \texttt{+} \texttt{<<} \texttt{>>}
+    \item Max ops: 4
+\end{itemize}
+
+\subsubsection{实现代码}
+\begin{lstlisting}[caption={tmin}]
+int tmin(void)
+{
+  return 1 << 31;
+}
+\end{lstlisting}
+
+\subsubsection{解题思路}
+32位二进制补码的最小整数是 \texttt{0x80000000}，即符号位为1，其余位全为0。这可以通过将整数1向左移动31位得到。
+
+\subsection{isTmax}
+\subsubsection{题目要求}
+判断x是否为最大的二进制补码数。
+\begin{itemize}
+    \item Legal ops: \texttt{!} \texttt{\~{}} \texttt{\&} \texttt{\^{}} \texttt{|} \texttt{+}
+    \item Max ops: 10
+\end{itemize}
+
+\subsubsection{实现代码}
+\begin{lstlisting}[caption={isTmax}]
+int isTmax(int x)
+{
+  int y = x + 1;
+  int is_neg1 = !!y;
+  int is_tmax_or_neg1 = !(~(x ^ y));
+  return is_tmax_or_neg1 & is_neg1;
+}
+\end{lstlisting}
+
+\subsubsection{解题思路}
+\begin{itemize}
+  \item 最大的二进制补码数 \texttt{Tmax} 是 \texttt{0x7FFFFFFF}。观察可得到， \texttt{Tmax} 加1时，会发生溢出，结果变为 \texttt{Tmin} (\texttt{0x80000000})。
+  \item 此时，\texttt{Tmin}恰好是 \texttt{\~Tmax}。所以 \texttt{x+1} 应该等于 \texttt{\~x}。
+  \item 同时，\texttt{-1} (\texttt{0xFFFFFFFF}) 加1后等于0，此时 \texttt{x+1} 也等于 \texttt{\~x}。因此，我们需要排除 \texttt{x} 为-1的情况。当 \texttt{x} 为-1时，\texttt{x+1} 为0，所以可以通过检查 \texttt{x+1} 是否为0来排除这种情况。
+  \item 综合以上逻辑，即可得到代码。
+\end{itemize}
+
+\subsection{allOddBits}
+\subsubsection{题目要求}
+判断一个数的所有奇数位是否都为1。
+\begin{itemize}
+    \item Legal ops: \texttt{!} \texttt{\~{}} \texttt{\&} \texttt{\^{}} \texttt{|} \texttt{+} \texttt{<<} \texttt{>>}
+    \item Max ops: 12
+\end{itemize}
+
+\subsubsection{实现代码}
+\begin{lstlisting}[caption={allOddBits}]
+int allOddBits(int x)
+{
+  int mask = 0x55 + (0x55 << 8);
+  mask = mask + (mask << 16);
+  return !(~(x | mask));
+}
+\end{lstlisting}
+
+\subsubsection{解题思路}
+\begin{itemize}
+  \item 首先构造一个所有奇数位为1，偶数位为0的掩码 \texttt{0xAAAAAAAA}。由于不能使用大常数，我们通过 \texttt{0x55} (二进制 \texttt{01010101}) 进行移位和加法来构造。
+  \item 如果 \texttt{x} 的所有奇数位都为1，那么 \texttt{x | mask} 的结果应该是全1 (\texttt{0xFFFFFFFF})。判断即可得到代码。
+\end{itemize}
+
+\subsection{negate}
+\subsubsection{题目要求}
+返回 \texttt{-x}。
+\begin{itemize}
+    \item Legal ops: \texttt{!} \texttt{\~{}} \texttt{\&} \texttt{\^{}} \texttt{|} \texttt{+} \texttt{<<} \texttt{>>}
+    \item Max ops: 5
+\end{itemize}
+
+\subsubsection{实现代码}
+\begin{lstlisting}[caption={negate}]
+int negate(int x)
+{
+  return ~x + 1;
+}
+\end{lstlisting}
+
+\subsubsection{解题思路}
+根据二进制补码的定义，一个数的相反数等于它的按位取反再加1。
+
+\subsection{isAsciiDigit}
+\subsubsection{题目要求}
+判断x是否为ASCII码中的'0'到'9'。
+\begin{itemize}
+    \item Legal ops: \texttt{!} \texttt{\~{}} \texttt{\&} \texttt{\^{}} \texttt{|} \texttt{+} \texttt{<<} \texttt{>>}
+    \item Max ops: 15
+\end{itemize}
+
+\subsubsection{实现代码}
+\begin{lstlisting}[caption={isAsciiDigit}]
+int isAsciiDigit(int x)
+{
+  int y = x + (~0x30 + 1); // y = x - 0x30
+  int z = x + (~0x3A + 1); // z = x - 0x3A
+  int is_nonneg_y = !(y >> 31);
+  int is_nonpos_z = !(~(z >> 31));
+  return is_nonneg_y & is_nonpos_z;
+}
+\end{lstlisting}
+
+\subsubsection{解题思路}
+\begin{itemize}
+  \item 我们需要判断一个整数 \texttt{x} 是否在0x30到0x39之间（即ASCII码中的'0'到'9'）。
+  \item 将原始条件转化为更易于位运算实现的条件：判断\texttt{x - 0x30 >= 0}以及\texttt{x - 0x39 <= 0}。
+  \item 等价于我们需要实现两个运算符：判断是否非负（非正）以及减法运算符。
+  \item 利用上一问，可以将减法转化为和相反数的加法，对判断非负，只需判断符号位即可。
+  \item 综合以上逻辑，即可得到代码。
+\end{itemize}
+
+\subsection{conditional}
+\subsubsection{题目要求}
+实现 \texttt{x ? y : z}。
+\begin{itemize}
+    \item Legal ops: \texttt{!} \texttt{\~{}} \texttt{\&} \texttt{\^{}} \texttt{|} \texttt{+} \texttt{<<} \texttt{>>}
+    \item Max ops: 16
+\end{itemize}
+
+\subsubsection{实现代码}
+\begin{lstlisting}[caption={conditional}]
+int conditional(int x, int y, int z)
+{
+  int is_x_nonzero = !x;
+  int mask = is_x_nonzero << 31 >> 31;
+  return (y & ~mask) | (z & mask);
+}
+\end{lstlisting}
+
+\subsubsection{解题思路}
+\begin{itemize}
+  \item 使用通用的表达式： \texttt{(y \& \~{}mask) | (z \& mask)}。我们需要根据 \texttt{x} 的值选择 \texttt{y} 或 \texttt{z}。
+  \item \begin{itemize}
+    \item 如果 \texttt{x} 不为0，我们需要一个全1的掩码。
+    \item 如果 \texttt{x} 为0，我们需要一个全0的掩码。
+  \end{itemize}
+  \item 通过将 \texttt{!x} 左移31位再右移31位，就可以得到所需的掩码。
+\end{itemize}
+
+\subsection{isLessOrEqual}
+\subsubsection{题目要求}
+判断 \texttt{x <= y}。
+\begin{itemize}
+    \item Legal ops: \texttt{!} \texttt{\~{}} \texttt{\&} \texttt{\^{}} \texttt{|} \texttt{+} \texttt{<<} \texttt{>>}
+    \item Max ops: 24
+\end{itemize}
+
+\subsubsection{实现代码}
+\begin{lstlisting}[caption={isLessOrEqual}]
+int isLessOrEqual(int x, int y)
+{
+  int diff_y_minus_x = y + (~x + 1);
+  int is_same_sign = ((x ^ y) >> 31);
+  int is_y_neg = !(y >> 31);
+  return (!is_same_sign & !(diff_y_minus_x >> 31)) | (is_same_sign & is_y_neg);
+}
+\end{lstlisting}
+
+\subsubsection{解题思路}
+判断 \texttt{x <= y} 等价于判断 \texttt{y - x >= 0}。但是直接计算 \texttt{y - x} 会有溢出的问题。
+\begin{itemize}
+    \item 当 \texttt{x} 和 \texttt{y} 符号相同时，\texttt{y - x} 不会溢出。此时只需判断 \texttt{y - x} 的符号位。
+    \item 当 \texttt{x} 和 \texttt{y} 符号不同时，如果 \texttt{x} 为正 \texttt{y} 为负，则 \texttt{x > y}；如果 \texttt{x} 为负 \texttt{y} 为正，则 \texttt{x < y}。
+\end{itemize}
+代码逻辑：
+\begin{enumerate}
+    \item \texttt{is\_same\_sign}：通过异或两数的符号位得到。如果符号相同，结果为0；不同则为-1。
+    \item 如果符号相同 (\texttt{!is\_same\_sign} 为1)，则判断 \texttt{y-x} 是否非负。
+    \item 如果符号不同 (\texttt{is\_same\_sign} 为-1)，则判断 \texttt{y} 是否为负。如果 \texttt{y} 为负，则 \texttt{x > y}，应当返回0。反之则返回1。
+\end{enumerate}
+
+\subsection{logicalNeg}
+\subsubsection{题目要求}
+不使用 \texttt{!} 实现 \texttt{!} 操作。
+\begin{itemize}
+    \item Legal ops: \texttt{\~{}} \texttt{\&} \texttt{\^{}} \texttt{|} \texttt{+} \texttt{<<} \texttt{>>}
+    \item Max ops: 12
+\end{itemize}
+
+\subsubsection{实现代码}
+\begin{lstlisting}[caption={logicalNeg}]
+int logicalNeg(int x)
+{
+  int is_neg = (x >> 31) & 1;
+  int is_pos = (x + (~(1 << 31))) >> 31 & 1;
+  return (is_neg | is_pos) ^ 1;
+}
+\end{lstlisting}
+
+\subsubsection{解题思路}
+\begin{itemize}
+    \item \texttt{is\_neg}: 判断 \texttt{x} 是否为负数。
+    \item \texttt{is\_pos}: 判断 \texttt{x} 是否为正数。这里通过 \texttt{x + Tmin} 来判断。如果 \texttt{x} 是正数，\texttt{x+Tmin} 结果为负。
+    \item 如果 \texttt{x} 是非0数，则 \texttt{is\_neg | is\_pos} 为1。如果 \texttt{x} 是0，则为0。最后异或1得到结果。
+\end{itemize}
+
+\subsection{howManyBits}
+\subsubsection{题目要求}
+返回表示x所需的最小二进制补码位数。
+\begin{itemize}
+    \item Legal ops: \texttt{!} \texttt{\~{}} \texttt{\&} \texttt{\^{}} \texttt{|} \texttt{+} \texttt{<<} \texttt{>>}
+    \item Max ops: 90
+\end{itemize}
+
+\subsubsection{实现代码}
+\begin{lstlisting}[caption={howManyBits}]
+int howManyBits(int x)
+{
+  // clarifies
+  int mask;
+  int high_16_bits, low_16_bits, is_high_16_bits_nonzero;
+  int high_8_bits, low_8_bits, is_high_8_bits_nonzero;
+  int high_4_bits, low_4_bits, is_high_4_bits_nonzero;
+  int high_2_bits, low_2_bits, is_high_2_bits_nonzero;
+  int high_1_bit, low_1_bit, is_high_1_bit_nonzero;
+
+  int bits = 1; // at least need 1 bit for 0
+  int origin_x = x;
+  // if x is negative, convert x to positive
+  int is_neg = ((x >> 31) & 1) << 31 >> 31; // all 1s if negative, all 0s if positive
+  x = (is_neg & ~x) | (~is_neg & x);        // if x is neg, x = ~x
+  // binary search for the highest 1 bit
+  // search in [16,31]
+  high_16_bits = x >> 16;
+  low_16_bits = x ^ (high_16_bits << 16);
+  is_high_16_bits_nonzero = !!high_16_bits;   // 1 for nonzero, 0 for zero
+  mask = is_high_16_bits_nonzero << 31 >> 31; // all 1s if nonzero, all 0s if zero
+  bits = bits + (is_high_16_bits_nonzero << 4);
+  x = (mask & high_16_bits) | (~mask & low_16_bits); // if high 16 bits is nonzero, x = high 16 bits else low 16 bits
+  // search in [8,15]
+  high_8_bits = x >> 8;
+  low_8_bits = x ^ (high_8_bits << 8);
+  is_high_8_bits_nonzero = !!high_8_bits; // 1 for nonzero, 0 for zero
+  mask = is_high_8_bits_nonzero << 31 >> 31;
+  bits = bits + (is_high_8_bits_nonzero << 3);
+  x = (mask & high_8_bits) | (~mask & low_8_bits); // if high 8 bits is nonzero, x = high 8 bits else low 8 bits
+  // search in [4,7]
+  high_4_bits = x >> 4;
+  low_4_bits = x ^ (high_4_bits << 4);
+  is_high_4_bits_nonzero = !!high_4_bits; // 1 for nonzero, 0 for zero
+  mask = is_high_4_bits_nonzero << 31 >> 31;
+  bits = bits + (is_high_4_bits_nonzero << 2);
+  x = (mask & high_4_bits) | (~mask & low_4_bits); // if high 4 bits is nonzero, x = high 4 bits else low 4 bits
+  // search in [2,3]
+  high_2_bits = x >> 2;
+  low_2_bits = x ^ (high_2_bits << 2);
+  is_high_2_bits_nonzero = !!high_2_bits; // 1 for nonzero, 0 for zero
+  mask = is_high_2_bits_nonzero << 31 >> 31;
+  bits = bits + (is_high_2_bits_nonzero << 1);
+  x = (mask & high_2_bits) | (~mask & low_2_bits); // if high 2 bits is nonzero, x = high 2 bits else low 2 bits
+  // search in [1,1]
+  high_1_bit = x >> 1;
+  low_1_bit = x ^ (high_1_bit << 1);
+  is_high_1_bit_nonzero = !!high_1_bit; // 1 for nonzero, 0 for zero
+  mask = is_high_1_bit_nonzero << 31 >> 31;
+  bits = bits + is_high_1_bit_nonzero;
+  x = (mask & high_1_bit) | (~mask & low_1_bit); // if high 1 bit is nonzero, x = high 1 bit else low 1 bit
+  // if x is not 0 or -1, need one more bit for sign
+  bits = bits + ((!!(origin_x ^ (origin_x >> 31))) & 1);
+  return bits;
+}
+\end{lstlisting}
+
+\subsubsection{解题思路}
+\begin{itemize}
+    \item 这个问题实际上是，对正数，可以删去符号位后的前导0；对负数，可以删去符号位后的前导1。然后计算剩余位数，再加上符号位。
+    \item 先对任何的负数，将其转换为正数（按位取反）。这样正负数都可以统一处理。
+    \item 然后，我们需要找到最高的1位所在的位置。可以通过二分查找的方法，逐步缩小范围。具体步骤如下：
+      \begin{enumerate}
+        \item 检查高16位是否有1。如果有，说明最高1位在高16位，更新范围为高16位，并将结果加16。
+        \item 否则，最高1位在低16位，更新范围为低16位。
+        \item 重复上述过程，依次检查高8位、高4位、高2位和高1位。
+        \item 每次找到最高1位所在的范围后，都将结果加上相应的位数。
+      \end{enumerate}
+    \item 最后，加上符号位，并处理特殊情况（0和-1），即可得到正确的代码。
+\end{itemize}
+
+\subsection{floatScale2}
+\subsubsection{题目要求}
+返回浮点数f的2倍。
+\begin{itemize}
+    \item Legal ops: Any integer/unsigned operations incl. \texttt{||}, \texttt{\&\&}. also \texttt{if}, \texttt{while}
+    \item Max ops: 30
+\end{itemize}
+
+\subsubsection{实现代码}
+\begin{lstlisting}[caption={floatScale2}]
+unsigned floatScale2(unsigned uf)
+{
+  unsigned exp = uf << 1 >> 24 << 23;
+  unsigned frac = uf & 0x007FFFFF;
+  unsigned sign = uf >> 31 << 31;
+  // NaN or infinity
+  if (exp == 0x7F800000)
+    return uf;
+  // denorm
+  if (exp == 0)
+  {
+    // frac overflow
+    if (frac >> 22)
+      return ((frac << 1) & 0x007FFFFF) + sign + 0x00800000;
+    else
+      return sign + (frac << 1);
+  }
+  // norm
+  else
+  {
+    // exp overflow
+    if (exp == 0x7F800000)
+      return uf >> 23 << 23; // return infinity
+    else
+      return sign + (((exp >> 23) + 1) << 23) + frac;
+  }
+}
+\end{lstlisting}
+
+\subsubsection{解题思路}
+将浮点数乘以2，需要分情况讨论：
+\begin{enumerate}
+    \item \textbf{NaN或无穷大}: 指数位全为1。直接返回原值。
+    \item \textbf{非规格化数}: 指数位全为0。乘以2相当于将尾数左移一位。符号位不变。如果发生尾数溢出（最高位变为1），则需要将其转换为规格化数，指数位设为1，尾数清除最高位。
+    \item \textbf{规格化数}: 指数位不全为0也不全为1。乘以2相当于将指数位加1。如果指数加1后变为全1，则结果为无穷大。
+\end{enumerate}
+
+\subsection{floatFloat2Int}
+\subsubsection{题目要求}
+将浮点数f转换为整数。
+\begin{itemize}
+    \item Legal ops: Any integer/unsigned operations incl. \texttt{||}, \texttt{\&\&}. also \texttt{if}, \texttt{while}
+    \item Max ops: 30
+\end{itemize}
+
+\subsubsection{实现代码}
+\begin{lstlisting}[caption={floatFloat2Int}]
+int floatFloat2Int(unsigned uf)
+{
+  unsigned exp = uf << 1 >> 24;
+  unsigned frac = uf & 0x007FFFFF;
+  unsigned sign = uf >> 31 << 31;
+  // NaN or infinity
+  if (exp == 0x7F800000)
+    return 0x80000000u;
+  // denorm
+  if (exp == 0)
+  {
+    return 0;
+  }
+  // norm
+  else
+  {
+    int e = exp - 127;
+    if (e < 0)
+      return 0;
+    else if (e > 31)
+      return 0x80000000u;
+    else
+    {
+      // transform frac to 1.frac
+      frac = frac + 0x00800000;
+      if (e > 23)
+      {
+        frac = frac << (e - 23);
+      }
+      else
+      {
+        frac = frac >> (23 - e);
+      }
+      return sign ? -frac : frac;
+    }
+  }
+}
+\end{lstlisting}
+
+\subsubsection{解题思路}
+\begin{enumerate}
+    \item \textbf{提取符号、阶码和尾数}。
+    \item \textbf{处理特殊值}: 如果是NaN或无穷大，或者转换后会溢出32位整数范围，返回 \texttt{0x80000000u}。
+    \item \textbf{处理非规格化数}: 非规格化数都是很小的数，转换为整数结果为0。
+    \item \textbf{处理规格化数}:\begin{enumerate}
+      \item \textbf{还原尾数}: 将隐藏的1加上，即 \texttt{frac | 0x00800000}。
+      \item \textbf{移位}: 根据阶值 \texttt{E} 对尾数进行移位。如果 \texttt{E > 23}，左移；如果 \texttt{E < 23}，右移。
+      \item \textbf{应用符号}: 根据符号位决定返回正数还是负数。
+    \end{enumerate}
+\end{enumerate}
+
+\subsection{floatPower2}
+\subsubsection{题目要求}
+计算 \texttt{2.0\^{}x}。
+\begin{itemize}
+    \item Legal ops: Any integer/unsigned operations incl. \texttt{||}, \texttt{\&\&}. Also \texttt{if}, \texttt{while}
+    \item Max ops: 30
+\end{itemize}
+
+\subsubsection{实现代码}
+\begin{lstlisting}[caption={floatPower2}]
+unsigned floatPower2(int x)
+{
+  // overflow
+  if (x > 127)
+    return 0x7F800000;
+  // underflow
+  else if (x < -126)
+    return 0;
+  // norm
+  else
+  {
+    return (x + 127) << 23;
+  }
+}
+\end{lstlisting}
+
+\subsubsection{解题思路}
+我们需要构造一个表示 \texttt{2.0\^{}x} 的浮点数。尾数部分总是1.0，所以我们只需要设置阶码。
+\begin{enumerate}
+    \item \textbf{溢出}: 如果 \texttt{x > 127}，超过了规格化数能表示的最大指数，返回正无穷。
+    \item \textbf{下溢}: 如果 \texttt{x} 太小，导致无法用非规格化数表示，返回0。
+    \item \textbf{规格化数}: 当 \texttt{-126 <= x <= 127} 时，结果是规格化数。阶码 \texttt{exp = x + 127}，尾数部分为0。
+\end{enumerate}
+
+\section{评测结果}
+运行脚本，得到评测结果如下：
+\begin{table}[H]
+\centering
+\begin{tabular}{|c|c|c|c|c|c|}
+\hline
+\multicolumn{3}{|c|}{Correctness Results} & \multicolumn{3}{c|}{Perf Results} \\
+\hline
+Points & Rating & Errors & Points & Ops & Puzzle \\
+\hline
+1 & 1 & 0 & 3 & 8 & bitXor \\
+1 & 1 & 0 & 3 & 1 & tmin \\
+1 & 1 & 0 & 3 & 7 & isTmax \\
+2 & 2 & 0 & 3 & 7 & allOddBits \\
+2 & 2 & 0 & 3 & 2 & negate \\
+3 & 3 & 0 & 3 & 12 & isAsciiDigit \\
+3 & 3 & 0 & 3 & 7 & conditional \\
+3 & 3 & 0 & 3 & 13 & isLessOrEqual \\
+4 & 4 & 0 & 3 & 9 & logicalNeg \\
+4 & 4 & 0 & 3 & 79 & howManyBits \\
+4 & 4 & 0 & 3 & 23 & floatScale2 \\
+4 & 4 & 0 & 3 & 17 & floatFloat2Int \\
+4 & 4 & 0 & 3 & 5 & floatPower2 \\
+\hline
+\end{tabular}
+\caption{实验各题评测结果}
+\end{table}
+比对后可知，所有的操作数均满足题目所给的限制，且所有题目均通过了正确性测试。
+
+\end{document}

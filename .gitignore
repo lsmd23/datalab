@@ -1,2 +1,7 @@
 *.pdf
 .vscode/
+*.aux
+*.log
+*.bbl
+*.blg
+*.gz
