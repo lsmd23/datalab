@@ -271,40 +271,57 @@ int logicalNeg(int x)
  */
 int howManyBits(int x)
 {
+  // clarifies
+  int mask;
+  int high_16_bits, low_16_bits, is_high_16_bits_nonzero;
+  int high_8_bits, low_8_bits, is_high_8_bits_nonzero;
+  int high_4_bits, low_4_bits, is_high_4_bits_nonzero;
+  int high_2_bits, low_2_bits, is_high_2_bits_nonzero;
+  int high_1_bit, low_1_bit, is_high_1_bit_nonzero;
+
   int bits = 1; // at least need 1 bit for 0
   int origin_x = x;
   // if x is negative, convert x to positive
-  int is_neg = (x >> 31) & 1;
-  x = (is_neg & ~x) | (~is_neg & x); // if x is neg, x = ~x
+  int is_neg = ((x >> 31) & 1) << 31 >> 31; // all 1s if negative, all 0s if positive
+  x = (is_neg & ~x) | (~is_neg & x);        // if x is neg, x = ~x
   // binary search for the highest 1 bit
   // search in [16,31]
-  int high_16_bits = x >> 16;
-  int is_high_16_bits_nonzero = !!high_16_bits; // 1 for nonzero, 0 for zero
+  high_16_bits = x >> 16;
+  low_16_bits = x ^ (high_16_bits << 16);
+  is_high_16_bits_nonzero = !!high_16_bits;   // 1 for nonzero, 0 for zero
+  mask = is_high_16_bits_nonzero << 31 >> 31; // all 1s if nonzero, all 0s if zero
   bits = bits + (is_high_16_bits_nonzero << 4);
-  x = (~0 << 16 >> (16 & ~is_high_16_bits_nonzero)) & x; // if high 16 bits is nonzero, x = high 16 bits else low 16 bits
+  x = (mask & high_16_bits) | (~mask & low_16_bits); // if high 16 bits is nonzero, x = high 16 bits else low 16 bits
   // search in [8,15]
-  int high_8_bits = x >> 8;
-  int is_high_8_bits_nonzero = !!high_8_bits; // 1 for nonzero, 0 for zero
+  high_8_bits = x >> 8;
+  low_8_bits = x ^ (high_8_bits << 8);
+  is_high_8_bits_nonzero = !!high_8_bits; // 1 for nonzero, 0 for zero
+  mask = is_high_8_bits_nonzero << 31 >> 31;
   bits = bits + (is_high_8_bits_nonzero << 3);
-  x = (~0 << 8 >> (8 & ~is_high_8_bits_nonzero)) & x; // if high 8 bits is nonzero, x = high 8 bits else low 8 bits
+  x = (mask & high_8_bits) | (~mask & low_8_bits); // if high 8 bits is nonzero, x = high 8 bits else low 8 bits
   // search in [4,7]
-  int high_4_bits = x >> 4;
-  int is_high_4_bits_nonzero = !!high_4_bits; // 1 for nonzero, 0 for zero
+  high_4_bits = x >> 4;
+  low_4_bits = x ^ (high_4_bits << 4);
+  is_high_4_bits_nonzero = !!high_4_bits; // 1 for nonzero, 0 for zero
+  mask = is_high_4_bits_nonzero << 31 >> 31;
   bits = bits + (is_high_4_bits_nonzero << 2);
-  x = (~0 << 4 >> (4 & ~is_high_4_bits_nonzero)) & x; // if high 4 bits is nonzero, x = high 4 bits else low 4 bits
+  x = (mask & high_4_bits) | (~mask & low_4_bits); // if high 4 bits is nonzero, x = high 4 bits else low 4 bits
   // search in [2,3]
-  int high_2_bits = x >> 2;
-  int is_high_2_bits_nonzero = !!high_2_bits; // 1 for nonzero, 0 for zero
+  high_2_bits = x >> 2;
+  low_2_bits = x ^ (high_2_bits << 2);
+  is_high_2_bits_nonzero = !!high_2_bits; // 1 for nonzero, 0 for zero
+  mask = is_high_2_bits_nonzero << 31 >> 31;
   bits = bits + (is_high_2_bits_nonzero << 1);
-  x = (~0 << 2 >> (2 & ~is_high_2_bits_nonzero)) & x; // if high 2 bits is nonzero, x = high 2 bits else low 2 bits
+  x = (mask & high_2_bits) | (~mask & low_2_bits); // if high 2 bits is nonzero, x = high 2 bits else low 2 bits
   // search in [1,1]
-  int high_1_bit = x >> 1;
-  int is_high_1_bit_nonzero = !!high_1_bit; // 1 for nonzero, 0 for zero
+  high_1_bit = x >> 1;
+  low_1_bit = x ^ (high_1_bit << 1);
+  is_high_1_bit_nonzero = !!high_1_bit; // 1 for nonzero, 0 for zero
+  mask = is_high_1_bit_nonzero << 31 >> 31;
   bits = bits + is_high_1_bit_nonzero;
-  // check the last bit
-  int last_bit = x & 1;
-  bits = bits + last_bit;
-  // todo: be debugged
+  x = (mask & high_1_bit) | (~mask & low_1_bit); // if high 1 bit is nonzero, x = high 1 bit else low 1 bit
+  // if x is not 0 or -1, need one more bit for sign
+  bits = bits + ((!!(origin_x ^ (origin_x >> 31))) & 1);
   return bits;
 }
 // float
